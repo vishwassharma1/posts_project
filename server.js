@@ -90,7 +90,6 @@ app.post('/posts', upload.single('image'), async (req, res) => {
   }
 });
 
-// server.js (continued)
 
 // Get all posts with filtering, sorting, and pagination
 app.get('/posts', async (req, res) => {
@@ -128,7 +127,6 @@ app.get('/posts', async (req, res) => {
   }
 });
 
-// server.js (continued)
 
 // Search for posts based on keywords
 app.get('/posts/search', async (req, res) => {
@@ -150,8 +148,6 @@ app.get('/posts/search', async (req, res) => {
   }
 });
 
-
-// server.js (continued)
 
 // Filter posts by tags
 app.get('/posts/filter', async (req, res) => {
