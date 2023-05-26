@@ -1,5 +1,3 @@
-// server.js
-
 const express = require('express');
 const mongoose = require('mongoose');
 const multer = require('multer');
@@ -10,11 +8,12 @@ const dotenv = require('dotenv');
 const Tag = require('./models/tag');
 const Post = require('./models/post');
 
+dotenv.config();
+
 // Initialize Express app
 const app = express();
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true }));
-dotenv.config();
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -41,11 +40,6 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-
-// Start the server
-app.listen(process.env.PORT || 3000, () => {
-  console.log('Server is listening on port 3000');
-});
 
 // Create a new post
 //  payload should look like this {
@@ -196,3 +190,13 @@ app.post('/posts/:postId/tags', async (req, res) => {
     res.status(500).json({ error: 'Failed to associate tags with post' });
   }
 });
+
+module.exports = app; // Export the Express app
+
+// Start the server
+if (require.main === module) {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`Server is listening on port ${port}`);
+  });
+}
