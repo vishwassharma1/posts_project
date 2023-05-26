@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const multer = require('multer');
 const admin = require('firebase-admin');
 const serviceAccount = require('./creds.json');
-const fs = require('fs');
 const dotenv = require('dotenv');
 const Tag = require('./models/tag');
 const Post = require('./models/post');
@@ -14,17 +13,6 @@ dotenv.config();
 const app = express();
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true }));
-
-// Configure multer for file upload
-const storage = multer.diskStorage({
-  destination: 'uploads/',
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = file.originalname.split('.').pop();
-    cb(null, `image-${uniqueSuffix}.${ext}`);
-  },
-});
-const upload = multer({ storage });
 
 // Configure Firebase admin SDK
 admin.initializeApp({
@@ -50,16 +38,19 @@ db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
 app.get('/favicon.ico', (req, res) => res.status(204));
 
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
 app.post('/posts', upload.single('image'), async (req, res) => {
   try {
-    // Get the file path of the uploaded image
-    const filePath = req.file.path;
+    // Get the file buffer of the uploaded image
+    const fileBuffer = req.file.buffer;
 
     // Upload the image to Firebase Storage
     const bucket = admin.storage().bucket();
     const fileName = `${Date.now()}-${req.file.originalname}`;
-    await bucket.upload(filePath, {
-      destination: fileName,
+    const file = bucket.file(fileName);
+    await file.save(fileBuffer, {
       metadata: {
         metadata: {
           firebaseStorageDownloadTokens: Date.now(),
@@ -68,16 +59,12 @@ app.post('/posts', upload.single('image'), async (req, res) => {
     });
 
     // Create the post in MongoDB
-    const Post = require('./models/post');
     const post = new Post({
       title: req.body.title,
       desc: req.body.desc,
       image: fileName,
     });
     await post.save();
-
-    // Delete the temporary file
-    fs.unlinkSync(filePath);
 
     res.status(201).json(post);
   } catch (err) {
@@ -89,31 +76,8 @@ app.post('/posts', upload.single('image'), async (req, res) => {
 // Get all posts with filtering, sorting, and pagination
 app.get('/posts', async (req, res) => {
   try {
-    const Post = require('./models/post');
-
-    // Apply filters
-    const filters = {};
-    if (req.query.tag) {
-      filters.tags = req.query.tag;
-    }
-
-    // Apply sorting
-    const sortOptions = {};
-    if (req.query.sortBy) {
-      const parts = req.query.sortBy.split(':');
-      sortOptions[parts[0]] = parts[1] === 'desc' ? -1 : 1;
-    }
-
-    // Apply pagination
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = parseInt(req.query.skip) || 0;
-
     // Fetch posts from MongoDB
-    const posts = await Post.find(filters)
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limit)
-      .exec();
+    const posts = await Post.find({}).exec();
 
     res.json(posts);
   } catch (err) {
