@@ -20,7 +20,7 @@ dotenv.config();
 const storage = multer.diskStorage({
   destination: 'uploads/',
   filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const ext = file.originalname.split('.').pop();
     cb(null, `image-${uniqueSuffix}.${ext}`);
   },
@@ -47,13 +47,15 @@ app.listen(process.env.PORT || 3000, () => {
   console.log('Server is listening on port 3000');
 });
 
-
 // Create a new post
 //  payload should look like this {
 //   "title": "testing",
 //   "desc": "testing",
 //   "image": "testing",
 // }
+
+app.get('/favicon.ico', (req, res) => res.status(204));
+
 app.post('/posts', upload.single('image'), async (req, res) => {
   try {
     // Get the file path of the uploaded image
@@ -89,7 +91,6 @@ app.post('/posts', upload.single('image'), async (req, res) => {
     res.status(500).json({ error: 'Failed to create post' });
   }
 });
-
 
 // Get all posts with filtering, sorting, and pagination
 app.get('/posts', async (req, res) => {
@@ -127,7 +128,6 @@ app.get('/posts', async (req, res) => {
   }
 });
 
-
 // Search for posts based on keywords
 app.get('/posts/search', async (req, res) => {
   try {
@@ -148,7 +148,6 @@ app.get('/posts/search', async (req, res) => {
   }
 });
 
-
 // Filter posts by tags
 app.get('/posts/filter', async (req, res) => {
   try {
@@ -166,7 +165,7 @@ app.get('/posts/filter', async (req, res) => {
 
 app.post('/tags', async (req, res) => {
   try {
-    const  {name}  = req.body;
+    const { name } = req.body;
     const tag = new Tag({ name });
     await tag.save();
     res.status(201).json(tag);
@@ -188,7 +187,7 @@ app.post('/posts/:postId/tags', async (req, res) => {
     const tags = await Tag.find({ _id: { $in: tagIds } });
 
     // Associate the tags with the post
-    post.tags = tags.map(tag => tag._id);
+    post.tags = tags.map((tag) => tag._id);
     await post.save();
 
     res.json(post);
